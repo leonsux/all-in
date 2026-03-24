@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏰 Van's 德州扑克顾问</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app">
+        <!-- ========== 头部 ========== -->
+        <header class="header">
+            <h1>🏰 Van's Deep Dark Fantasy♂</h1>
+            <p class="subtitle">德州扑克智能顾问 — 让数学成为你的武器♂</p>
+        </header>
+
+        <!-- ========== 选牌区域 ========== -->
+        <section class="section card-input-section">
+            <h2>🃏 选择你的牌</h2>
+
+            <!-- 手牌 -->
+            <div class="card-group">
+                <label>你的手牌 (2张)</label>
+                <div class="selected-cards" id="my-hand-display">
+                    <div class="card-slot empty" data-slot="hand-0">?</div>
+                    <div class="card-slot empty" data-slot="hand-1">?</div>
+                </div>
+            </div>
+
+            <!-- 公共牌 -->
+            <div class="card-group">
+                <label>公共牌 (0-5张)</label>
+                <div class="selected-cards" id="community-display">
+                    <div class="card-slot empty" data-slot="comm-0">?</div>
+                    <div class="card-slot empty" data-slot="comm-1">?</div>
+                    <div class="card-slot empty" data-slot="comm-2">?</div>
+                    <div class="card-slot empty" data-slot="comm-3">?</div>
+                    <div class="card-slot empty" data-slot="comm-4">?</div>
+                </div>
+            </div>
+
+            <!-- 牌面选择器 -->
+            <div class="card-picker" id="card-picker">
+                <div class="picker-header">
+                    <span>点击选牌 → 依次填入手牌和公共牌</span>
+                    <button class="btn btn-small btn-danger" id="btn-clear-all">全部清除</button>
+                </div>
+                <div id="card-grid" class="card-grid">
+                    <!-- JS 动态生成 -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== 参数设置 ========== -->
+        <section class="section params-section">
+            <h2>⚙️ 参数设置</h2>
+            <div class="params-grid">
+                <div class="param-item">
+                    <label for="num-opponents">对手数量</label>
+                    <div class="param-control">
+                        <button class="btn btn-tiny" onclick="adjustParam('num-opponents', -1)">−</button>
+                        <input type="number" id="num-opponents" value="1" min="1" max="9">
+                        <button class="btn btn-tiny" onclick="adjustParam('num-opponents', 1)">+</button>
+                    </div>
+                </div>
+                <div class="param-item">
+                    <label for="pot-size">底池大小</label>
+                    <input type="number" id="pot-size" value="100" min="0" step="10">
+                </div>
+                <div class="param-item">
+                    <label for="call-amount">跟注金额</label>
+                    <input type="number" id="call-amount" value="20" min="0" step="5">
+                </div>
+                <div class="param-item">
+                    <label for="position">你的位置</label>
+                    <select id="position">
+                        <option value="EP">前位 (EP)</option>
+                        <option value="MP" selected>中位 (MP)</option>
+                        <option value="LP">后位 (LP/BTN)</option>
+                        <option value="BB">盲注位 (SB/BB)</option>
+                    </select>
+                </div>
+                <div class="param-item">
+                    <label for="simulations">模拟次数</label>
+                    <select id="simulations">
+                        <option value="5000">5,000 (快速)</option>
+                        <option value="15000" selected>15,000 (推荐)</option>
+                        <option value="30000">30,000 (精确)</option>
+                        <option value="50000">50,000 (极精确)</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== 操作按钮 ========== -->
+        <section class="section actions-section">
+            <div class="action-buttons">
+                <button class="btn btn-primary btn-large" id="btn-analyze" onclick="runAnalysis()">
+                    🔮 综合分析
+                </button>
+                <button class="btn btn-secondary" id="btn-equity" onclick="runEquity()">
+                    📊 胜率计算
+                </button>
+                <button class="btn btn-secondary" id="btn-outs" onclick="runOuts()">
+                    🔢 补牌计算
+                </button>
+                <button class="btn btn-secondary" id="btn-preflop" onclick="runPreflop()">
+                    🏷️ 起手牌分级
+                </button>
+            </div>
+            <div class="progress-bar" id="progress-bar" style="display:none;">
+                <div class="progress-fill" id="progress-fill"></div>
+                <span class="progress-text" id="progress-text">模拟中...</span>
+            </div>
+        </section>
+
+        <!-- ========== 结果展示 ========== -->
+        <section class="section results-section" id="results-section" style="display:none;">
+            <h2>📋 分析结果</h2>
+            <div id="results-container"></div>
+        </section>
+
+        <!-- ========== 起手牌表 ========== -->
+        <section class="section">
+            <details class="range-details">
+                <summary>📊 翻牌前起手牌分级参考表</summary>
+                <div class="range-table">
+                    <div class="range-tier tier-1">
+                        <h3>🔥 Tier 1 — 怪兽牌</h3>
+                        <p>AA, KK, QQ, AKs</p>
+                        <small>任何位置都应该加注！</small>
+                    </div>
+                    <div class="range-tier tier-2">
+                        <h3>💎 Tier 2 — 优质牌</h3>
+                        <p>JJ, TT, AKo, AQs, AQo, AJs</p>
+                        <small>大多数位置应该加注入池</small>
+                    </div>
+                    <div class="range-tier tier-3">
+                        <h3>👍 Tier 3 — 可玩牌</h3>
+                        <p>99-77, ATs, ATo, KQs, KQo, KJs, QJs, JTs, A9s, A8s</p>
+                        <small>中后位加注入池</small>
+                    </div>
+                    <div class="range-tier tier-4">
+                        <h3>🎲 Tier 4 — 投机牌</h3>
+                        <p>66-22, KTs, QTs, J9s, T9s, 98s, 87s, 76s, 65s, A7s-A2s, K9s, Q9s</p>
+                        <small>后位/多人底池便宜入池</small>
+                    </div>
+                    <div class="range-tier tier-5">
+                        <h3>🗑️ Tier 5 — 其余</h3>
+                        <p>以上未列出的牌</p>
+                        <small>一般弃牌</small>
+                    </div>
+                </div>
+            </details>
+        </section>
+
+        <!-- ========== 页脚 ========== -->
+        <footer class="footer">
+            <p>♠♥♦♣ 好的牌手不是每把都赢，而是长期盈利♂ ♣♦♥♠</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
